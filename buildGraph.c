@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "matrix.h"
+
 
 #define INDEX(i,j,n,m) i*m + j
 #define ACCESS(A,i,j) A.data[INDEX(i,j,A.rows,A.cols)]
@@ -11,13 +13,13 @@
 typedef struct matrix{
 	int rows;
 	int cols;
-	short *data;
+	float *data;
 } matrix;
 
 void initMatrix(matrix *A, int rows, int cols){
 	A->rows = rows;
 	A->cols = cols;
-	A->data = calloc(rows*cols, sizeof(short));
+	A->data = calloc(rows*cols, sizeof(float));
 }
 
 char *tokenize_index(char *line){
@@ -50,6 +52,10 @@ int main(){
 	size_t bufsiz2;
 	FILE *stream = fopen("arxiv-citations.txt", "r");
 	FILE *indexes = fopen("indexes", "r");
+	
+
+
+	 
 	for (i = 0; i < 100; i){
 		getline(&line, &bufsiz, stream);
 		if (!strcmp(line, "-----\n")){
