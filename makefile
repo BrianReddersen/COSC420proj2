@@ -21,3 +21,6 @@ rebuild2:
 
 test:
 	make rebuild2; make runbst
+	
+graph:
+	mpicc -std=c99 -w buildGraph.c -o buildgraph
