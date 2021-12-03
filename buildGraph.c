@@ -92,7 +92,7 @@ int main(){
 // 		printf("\n");
 // 	}
 	MPI_File_open(world, "adjacencyMat.data", MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
-	MPI_File_write(fh, m.data, 1000*1000, MPI_DOUBLE, MPI_STATUS_IGNORE);
+	MPI_File_write(fh, m.data, 1000*1000, MPI_FLOAT, MPI_STATUS_IGNORE);
 	MPI_File_close(&fh);
 	fclose(stream);
 // 	fclose(out);
