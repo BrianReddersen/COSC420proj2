@@ -17,8 +17,8 @@ int main(){
 	size_t bufsiz;
 	FILE *stream = fopen("arxiv-citations.txt", "r");
 	FILE *out = fopen("indexes", "w");
-	for (i = 0; i < 1000; i){		//replace this for loop with a while(!eof) to get the indexes of every paper instead of the first 1k
-		getline(&line, &bufsiz, stream);
+	while (getline(&line, &bufsiz, stream) != EOF){		//replace this for loop with a while(!eof) to get the indexes of every paper instead of the first 1k
+// 		getline(&line, &bufsiz, stream);
 // 		printf("%s", line);
 		if ((strcmp(line, "-----\n") && strcmp(line, "+++++\n")) && !mode){
 			mode = 1;
