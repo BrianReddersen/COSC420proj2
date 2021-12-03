@@ -18,7 +18,7 @@ typedef struct matrix{
 void initMatrix(matrix *A, int rows, int cols){
 	A->rows = rows;
 	A->cols = cols;
-	A->data = calloc(rows*cols, sizeof(double));
+	A->data = calloc(rows*cols, sizeof(float));
 }
 
 char *tokenize_index(char *line){
