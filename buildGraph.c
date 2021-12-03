@@ -12,7 +12,7 @@
 typedef struct matrix{
 	int rows;
 	int cols;
-	double *data;
+	float *data;
 } matrix;
 
 void initMatrix(matrix *A, int rows, int cols){
