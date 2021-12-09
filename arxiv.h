@@ -4,8 +4,10 @@
 // group members: Spencer Lefever, Cody Murrer, Brian Reddersen
 
 #include<stdio.h>
-#include<stdlib.h>
-#include<mpi.h>
+#include <stdlib.h>
+#include <mpi.h>
+#include <mongoc/mongoc.h>
+#include <bson/bson.h>
 
 #define INDEX(i,j,n,m) i*m + j
 #define INDEX2(i,j,n,m) j*m + i
@@ -25,6 +27,49 @@ struct node{
 	struct node *left;
 	struct node *right;
 } node;
+
+void search_single_word(char *arg){
+	const char *dbstr = "mongodb://localhost:27017";
+	mongoc_client_t *client;
+	mongoc_collection_t *coll;
+	bson_oid_t oid;
+	const bson_t *doc;
+	char *str;
+	bson_error_t err;
+	
+	mongoc_init();
+	
+	client = mongoc_client_new(dbstr);
+	if (!client) exit(-1);
+	
+	mongoc_client_set_appname(client, "testclient");
+	coll = mongoc_client_get_collection(client, "project2", "papers");
+	
+	doc = bson_new();
+	
+	bson_t *filter;
+	bson_t *opts;
+	mongoc_cursor_t *curs;
+	mongoc_read_prefs_t *rp;
+	rp = mongoc_read_prefs_new(MONGOC_READ_SECONDARY);
+	
+	filter = BCON_NEW("abstract", "{", "$regex", arg, "$options", "si", "}");
+	opts = BCON_NEW("projection", "{", "paper_id", BCON_BOOL(true), 
+					"title", BCON_BOOL(true), "_id", BCON_BOOL(false), "}",
+					"sort", "{", "pagerank", BCON_INT32(-1), "}");
+	curs = mongoc_collection_find_with_opts(coll, filter, opts, NULL);
+	
+	while (mongoc_cursor_next(curs, &doc)){
+		str = bson_as_canonical_extended_json(doc, NULL);
+		printf("%s\n", str);
+		bson_free(str);
+	}
+	
+	bson_destroy(doc);
+	mongoc_collection_destroy(coll);
+	mongoc_client_destroy(client);
+	mongoc_cleanup();
+}
 
 void initMatrix(matrix* A, int rows, int cols){
 	A->rows = rows;
