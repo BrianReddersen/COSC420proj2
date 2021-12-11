@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <mpi.h>
-#include "matrix.h"
 
 #define INDEX(i,j,n,m) i*m + j
 #define ACCESS(A,i,j) A.data[INDEX(i,j,A.rows,A.cols)]
@@ -19,7 +18,7 @@ typedef struct matrix{
 void initMatrix(matrix *A, int rows, int cols){
 	A->rows = rows;
 	A->cols = cols;
-	A->data = calloc(rows*cols, sizeof(float));
+	A->data = calloc(rows*cols, sizeof(double));
 }
 
 char *tokenize_index(char *line){
@@ -52,13 +51,10 @@ int main(){
 	MPI_Comm_rank(world, &rank);
 	MPI_File fh;
 	matrix m;
-	//initMatrix(&m, 1628118, 1628118);
-	m->rows = 1628118;
-	m->cols = 1628118;
-	m->data = NULL;	
-	mRowBuf = malloc(m->cols*sizeof(float));
-	memset(mRowBuf, 0, m->cols*sizeof(float));
-
+	write(1, "test\n", 5); 
+	int file_length = 1354721;
+	initMatrix(&m, 1, file_length);
+	write(1, "test\n", 5);
 	int i = 0;
 	int mode = 0;
 	int ind = 0;
@@ -71,7 +67,10 @@ int main(){
 	FILE *stream = fopen("arxiv-citations.txt", "r");
 	FILE *indexes = fopen("indexes", "r");
 	
-	for (i = 0; i < A->rows; i){
+	MPI_File_open(world, "adjacencyMat.data", MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
+	//change 2 to file_length for full matrix
+	for (i = 0; i < 2; i){
+		memset(m.data, 0, file_length * sizeof(float));
 		getline(&line, &bufsiz, stream);
 		if (!strcmp(line, "-----\n")){
 			mode = 1;
@@ -87,15 +86,11 @@ int main(){
 				ind = atoi(tokenize_index(file_line));
 				temp = tokenize_id(file_line);
 				if (!strcmp(temp, line)){
-					//ACCESS(m,i,ind) = 1;
-					mRowBuf[i] = 1;
+					ACCESS(m,0,ind) = 1;
 				}
 			}
 		}
-		
-	MPI_File_open(world, "adjacencyMat.data", MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
-	MPI_File_write_at(fh, i*m->cols*sizeof(float), mRowBuf, m->cols, MPI_FLOAT, MPI_STATUS_IGNORE);
-	MPI_File_close(&fh);
+		MPI_File_write(fh, m.data, file_length, MPI_FLOAT, MPI_STATUS_IGNORE);
 	}
 // 	for (int i = 0; i < 100; i++){
 // 		for (int j = 0; j < 100; j++){
@@ -103,7 +98,9 @@ int main(){
 // 		}
 // 		printf("\n");
 // 	}
-	//Print one row out to file at a time instead of dumping matrix all at once
+	
+	
+	MPI_File_close(&fh);
 	fclose(stream);
 // 	fclose(out);
 	free(line);
