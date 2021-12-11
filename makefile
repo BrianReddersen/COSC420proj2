@@ -24,3 +24,16 @@ test:
 	
 graph:
 	mpicc -std=c99 -w buildGraph.c -o buildgraph
+	
+db:
+	mpicc -o dbsearch dbsearch.c $$(pkg-config --libs --cflags libmongoc-1.0)
+
+parse:
+	gcc -o parse parse.c $$(pkg-config --libs --cflags libmongoc-1.0)
+	
+graphtest:
+	rm adjacencyMat.data
+	make graph
+	mpirun -n 1 ./buildgraph
+index:
+	mpicc -std=c99 -w buildIndex.c -o buildindex
