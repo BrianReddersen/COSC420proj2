@@ -127,9 +127,9 @@ for(int j=0; j<20; j++)
  //printf("Process %d beginning first matrix mult\n", myRank); 
  
  //MPI_Barrier(world);
- printf("rank %d Before open file\n", myRank);
+ //printf("rank %d Before open file\n", myRank);
  MPI_File_open(world, "adjacencyMat.data", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
- printf("rank %d after open file\n", myRank);
+ //printf("rank %d after open file\n", myRank);
  for(int i=0; i<rowcts[myRank]; i++)
  {
   //Malloc rowBufA on each process
@@ -154,7 +154,7 @@ for(int j=0; j<20; j++)
   MPI_FLOAT, //recvType
   world); //comm
  
- printf("After Gather %d\n", myRank);
+ //printf("After Gather %d\n", myRank);
 
  //----------------(L^T)x; x=Ly---------------------
  MPI_File_open(world, "adjacencyMatTPose.data", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
@@ -202,7 +202,7 @@ for(int j=0; j<20; j++)
 
  MPI_File_close(&fh);
  
- printf("Step %d produces eigenvalue of %5f \n", j, scalar);
+ if(myRank==0) printf("Step %d produces eigenvalue of %5f \n", j, scalar);
 
  free(multBuf);
 }

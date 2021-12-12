@@ -26,8 +26,8 @@ int main(int argc, char** argv)
  MPI_Comm_rank(world, &myRank);
 
  matrix A;
- A.rows = 100;
- A.cols = 100;
+ A.rows = 1000;
+ A.cols = 1000;
  A.data = NULL;
 
  int* rowcts = malloc(worldSize*sizeof(int));
