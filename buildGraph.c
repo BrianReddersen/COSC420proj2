@@ -71,7 +71,7 @@ int main(){
 	
 	MPI_File_open(world, "adjacencyMat.data", MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
 	//change 2 to file_length for full matrix
-	for(i = 0; i <file_length; i++){
+	for(i = 0; i <file_length; i){
 		memset(m.data, 0, file_length * sizeof(float));
 		getline(&line, &bufsiz, stream);
 		if (!strcmp(line, "-----\n")){
