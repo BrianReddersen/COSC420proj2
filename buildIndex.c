@@ -16,7 +16,7 @@ int main(){
 	char *line = malloc(255*sizeof(char));
 	size_t bufsiz;
 	FILE *stream = fopen("arxiv-metadata.json", "r");
-	FILE *out = fopen("indexes2", "w");
+	FILE *out = fopen("indexes", "w");
 	int n = 0;
 	for (i = 0; i < 1656538; i){		//replace this for loop with a while(!eof) to get the indexes of every paper instead of the first 1k
 // 	while((n = getline(&line, &bufsiz, stream)) != -1){
