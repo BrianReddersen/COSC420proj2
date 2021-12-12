@@ -16,7 +16,7 @@ int main()
 
  for(i=0; i<1628118; i)
  {
-  if(getline(&line, &bufsize, stream) == EOF) break;
+  if(getline(&line, &bufsiz, stream) == EOF) break;
   
   if(!mode)
   { 
