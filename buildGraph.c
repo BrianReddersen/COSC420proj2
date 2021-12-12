@@ -52,7 +52,7 @@ int main(){
 	MPI_File fh;
 	matrix m;
 	write(1, "test\n", 5); 
-	int file_length = 1354721;
+	int file_length = 1628118;
 	initMatrix(&m, 1, file_length);
 	write(1, "test\n", 5);
 	int i = 0;
@@ -66,10 +66,12 @@ int main(){
 	size_t bufsiz2;
 	FILE *stream = fopen("arxiv-citations.txt", "r");
 	FILE *indexes = fopen("indexes", "r");
+
+	printf("%d\n", m.cols);	
 	
 	MPI_File_open(world, "adjacencyMat.data", MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
 	//change 2 to file_length for full matrix
-	for (i = 0; i < 2; i){
+	for(i = 0; i <file_length; i++){
 		memset(m.data, 0, file_length * sizeof(float));
 		getline(&line, &bufsiz, stream);
 		if (!strcmp(line, "-----\n")){
@@ -90,7 +92,7 @@ int main(){
 				}
 			}
 		}
-		MPI_File_write(fh, m.data, file_length, MPI_FLOAT, MPI_STATUS_IGNORE);
+		MPI_File_write_at(fh, i*m.cols*sizeof(float), m.data, file_length, MPI_FLOAT, MPI_STATUS_IGNORE);
 	}
 // 	for (int i = 0; i < 100; i++){
 // 		for (int j = 0; j < 100; j++){
@@ -107,4 +109,5 @@ int main(){
 	free(cmp_line);
 // 	free(temp);
 	MPI_Finalize();
+	return 0;
 }
