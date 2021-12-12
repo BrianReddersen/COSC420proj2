@@ -3,12 +3,6 @@
 #include <mpi.h>
 #include <string.h>
 
-struct matrix{
-	int rows;
-	int cols;
-	short *data;
-} matrix;
-
 //builds an adjacency matrix for tht first 1000 entries in the citation file
 int main(){
 	int i = 0;
