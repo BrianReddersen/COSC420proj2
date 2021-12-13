@@ -72,7 +72,7 @@ int main(){
 	for(i = 0; i < file_length; i){
 		while (i < start_point){
 			getline(&line, &bufsiz, stream);
-			i++;
+			if (!strcmp(line, "+++++\n")) i++;
 		}
 		MPI_Barrier(world);
 		printf("test - rank %d on line %d\n", rank, i);
