@@ -43,21 +43,16 @@ int main(){
 	int rank;
 	int worldsize;
 	MPI_Comm_size(world, &worldsize);
-	if (worldsize != 1){
-		printf("Run with -n 1");
-		MPI_Finalize();
-		return -1;
-	}
 	MPI_Comm_rank(world, &rank);
 	MPI_File fh;
 	matrix m;
-	write(1, "test\n", 5); 
 	int file_length = 1628118;
+	int file_break_point = 1354752;
 	initMatrix(&m, 1, file_length);
-	write(1, "test\n", 5);
 	int i = 0;
 	int mode = 0;
 	int ind = 0;
+	int start_point = rank*(file_length/worldsize);
 	char *line = malloc(100*sizeof(char));
 	char *cmp_line = malloc(100*sizeof(char));
 	char *file_line = malloc(100*sizeof(char));
@@ -68,10 +63,20 @@ int main(){
 	FILE *indexes = fopen("indexes", "r");
 
 	printf("%d\n", m.cols);	
+	printf("rank: %d working on %d - %d\n", rank, rank*(file_length/worldsize), (rank + 1)*(file_length/worldsize));
 	
+	// indexes file is in a different order than the citations, i'll do some fuckery once the
+	// hits and pageranks are done to fix it
 	MPI_File_open(world, "adjacencyMat.data", MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
 	//change 2 to file_length for full matrix
-	for(i = 0; i <file_length; i){
+	for(i = 0; i < file_length; i){
+		while (i < start_point){
+			getline(&line, &bufsiz, stream);
+			i++;
+		}
+		MPI_Barrier(world);
+		printf("test - rank %d on line %d\n", rank, i);
+		sleep(1);
 		memset(m.data, 0, file_length * sizeof(float));
 		getline(&line, &bufsiz, stream);
 		if (!strcmp(line, "-----\n")){
@@ -83,12 +88,15 @@ int main(){
 			i++;
 			continue;
 		}
-		if (mode == 1){
-			while (getline(&file_line, &bufsiz2, indexes) != EOF){
-				ind = atoi(tokenize_index(file_line));
-				temp = tokenize_id(file_line);
-				if (!strcmp(temp, line)){
-					ACCESS(m,0,ind) = 1;
+		//since citation file is broken, enter a row of zeroes after the break point
+		if (i < file_break_point){
+			if (mode == 1){
+				while (getline(&file_line, &bufsiz2, indexes) != EOF){
+					ind = atoi(tokenize_index(file_line));
+					temp = tokenize_id(file_line);
+					if (!strcmp(temp, line)){
+						ACCESS(m,0,ind) = 1;
+					}
 				}
 			}
 		}
