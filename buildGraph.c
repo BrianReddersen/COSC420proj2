@@ -106,7 +106,7 @@ int main(){
 				}
 			}
 		}
-		MPI_File_write_at(fh, rowDispls[rank]+(i*m.cols*sizeof(float)), m.data, file_length, MPI_FLOAT, MPI_STATUS_IGNORE);
+		MPI_File_write_at(fh, (rowDispls[rank]+i)*m.cols*sizeof(float), m.data, file_length, MPI_FLOAT, MPI_STATUS_IGNORE);
 	}
 // 	for (int i = 0; i < 100; i++){
 // 		for (int j = 0; j < 100; j++){
