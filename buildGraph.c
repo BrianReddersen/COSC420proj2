@@ -62,7 +62,6 @@ int main(){
 	FILE *stream = fopen("arxiv-citations.txt", "r");
 	FILE *indexes = fopen("indexes", "r");
 
-	printf("%d\n", m.cols);	
 	printf("rank: %d working on %d - %d\n", rank, rank*(file_length/worldsize), (rank + 1)*(file_length/worldsize));
 	
 	// indexes file is in a different order than the citations, i'll do some fuckery once the
@@ -98,6 +97,7 @@ int main(){
 				}
 			}
 		}
+		if (rank == 0) printf("rank 0 on %d of %d\n", i, (rank + 1)*(file_length/worldsize));
 		MPI_File_write_at(fh, i*m.cols*sizeof(float), m.data, file_length, MPI_FLOAT, MPI_STATUS_IGNORE);
 	}
 // 	for (int i = 0; i < 100; i++){
