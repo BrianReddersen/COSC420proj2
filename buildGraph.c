@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <mpi.h>
-#include "matrix.h"
+
 #define INDEX(i,j,n,m) i*m + j
 #define ACCESS(A,i,j) A.data[INDEX(i,j,A.rows,A.cols)]
 
@@ -40,7 +40,8 @@ char *tokenize_id(char *line){
 int main(){
 	MPI_Init(NULL, NULL);
 	MPI_Comm world = MPI_COMM_WORLD;
-	int rank, worldsize;
+	int rank;
+	int worldsize;
 	MPI_Comm_size(world, &worldsize);
 	MPI_Comm_rank(world, &rank);
 	MPI_File fh;
@@ -61,28 +62,19 @@ int main(){
 	FILE *stream = fopen("arxiv-citations.txt", "r");
 	FILE *indexes = fopen("indexes", "r");
 
-	int* rowcts = malloc(worldsize*sizeof(int));
-	int* rowDispls = malloc(worldsize*sizeof(int));
-	calcRowcts(rowcts, worldsize, file_length);
-	calcRowDispls(rowDispls, rowcts, worldsize);
-	
-
 	printf("%d\n", m.cols);	
-	//printf("rank: %d working on %d - %d\n", rank, rank*(file_length/worldsize), (rank + 1)*(file_length/worldsize));
-	printf("rank: %d working on %d - %d\n", rank, rowDispls[rank], rowDispls[rank]+rowcts[rank]);
+	printf("rank: %d working on %d - %d\n", rank, rank*(file_length/worldsize), (rank + 1)*(file_length/worldsize));
 	
 	// indexes file is in a different order than the citations, i'll do some fuckery once the
 	// hits and pageranks are done to fix it
 	MPI_File_open(world, "adjacencyMat.data", MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
 	//change 2 to file_length for full matrix
-	for(i = 0; i < file_length; i){
+	for(i = 0; i < (rank+1)*(file_length/worldsize); i){
 		while (i < start_point){
 			getline(&line, &bufsiz, stream);
 			if (!strcmp(line, "+++++\n")) i++;
 		}
 		MPI_Barrier(world);
-		printf("test - rank %d on line %d\n", rank, i);
-		sleep(1);
 		memset(m.data, 0, file_length * sizeof(float));
 		getline(&line, &bufsiz, stream);
 		if (!strcmp(line, "-----\n")){
@@ -106,7 +98,7 @@ int main(){
 				}
 			}
 		}
-		MPI_File_write_at(fh, (rowDispls[rank]+i)*m.cols*sizeof(float), m.data, file_length, MPI_FLOAT, MPI_STATUS_IGNORE);
+		MPI_File_write_at(fh, i*m.cols*sizeof(float), m.data, file_length, MPI_FLOAT, MPI_STATUS_IGNORE);
 	}
 // 	for (int i = 0; i < 100; i++){
 // 		for (int j = 0; j < 100; j++){
