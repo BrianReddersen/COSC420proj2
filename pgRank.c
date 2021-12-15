@@ -35,8 +35,8 @@ MPI_Comm_rank(world, &myRank);
 
 
 matrix A;
-A.rows = 100;
-A.cols = 100;
+A.rows = 1628118;
+A.cols = 1628118;
 A.data = NULL;
 //A.data = malloc(A.rows*A.cols*sizeof(float));
 
@@ -79,6 +79,7 @@ for(int i=0; i<p.rows; i++)
  vecBufp[i] = 1.0;
 }
 
+MPI_Barrier(world);
 MPI_File_open(world, "pgRankVec.data", MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
 
 if(myRank==0) MPI_File_write(fh, vecBufp, p.rows*p.cols, MPI_FLOAT, MPI_STATUS_IGNORE);
@@ -86,6 +87,9 @@ MPI_File_close(&fh);
 
 //Free buffer used for file input
 free(vecBufp);
+
+MPI_Barrier(world);
+
 
 //-----------------End output vector to file---------------------
 
@@ -118,9 +122,10 @@ vecBufp = malloc(p.rows*sizeof(float));
 MPI_File_open(world, "pgRankVec.data", MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
 MPI_File_read(fh, vecBufp, p.rows*p.cols, MPI_FLOAT, MPI_STATUS_IGNORE);
 MPI_File_close(&fh);
-
+MPI_Barrier(world);
+ 
 //For loop for power method instead of while loop testing convergence
-for(int j=0; j<20; j++)
+for(int j=0; j<50; j++)
 {
  //malloc buffer to hold authority score vector
  multBuf = malloc(p.rows*sizeof(float));
@@ -128,11 +133,13 @@ for(int j=0; j<20; j++)
 //For loop to perform M*p for every row in M
  for(int i=0; i<rowcts[myRank]; i++)
  { 
+  MPI_Barrier(world);
   MPI_File_open(world, "stochasticMat.data", MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
   //Read in current row on respective process 
   MPI_File_read_at(fh, (rowDispls[myRank]+i)*A.cols*sizeof(float), rowBufA, A.cols, MPI_FLOAT, MPI_STATUS_IGNORE);
   MPI_File_close(&fh);
- 
+  MPI_Barrier(world);
+  
   multBuf[i] = (float)ipMatrix(rowBufA, vecBufp, p.rows);
 
 /*
@@ -150,18 +157,21 @@ for(int j=0; j<20; j++)
 */
 
 
- //All_gahter multBuf into vecBufP
+ //All_gahter multBuf into vecBufP for next iteration
  MPI_Allgatherv(multBuf, rowcts[myRank], MPI_FLOAT, vecBufp, rowcts, rowDispls, MPI_FLOAT, world);
 
+ MPI_Barrier(world);
  //Each process print multBuf into their part of the file 
  MPI_File_open(world, "pgRankVec.data", MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
  MPI_File_write_at(fh, rowDispls[myRank]*sizeof(float), multBuf, rowcts[myRank], MPI_FLOAT, MPI_STATUS_IGNORE);
  MPI_File_close(&fh);
-  
+ MPI_Barrier(world);
 
  }
-
+ 
+ MPI_Barrier(world);
  free(multBuf);
+ 
 }
 
 

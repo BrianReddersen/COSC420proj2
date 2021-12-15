@@ -36,8 +36,8 @@ MPI_Comm_rank(world, &myRank);
 
 //Matrix struct to hold row and col values for Adjacency matrix
 matrix A;
-A.rows = 100;
-A.cols = 100;
+A.rows = 1628118;
+A.cols = 1628118;
 A.data = NULL;
 //A.data = malloc(A.rows*A.cols*sizeof(float));
 
@@ -70,7 +70,7 @@ MPI_Type_create_resized(col, 0, sizeof(float), &coltype);
 MPI_Type_commit(&coltype);
 
 MPI_File fh;
-float* vecBufh;
+float* vecBufh = NULL;
 //Fill hub score data file with vector
 vecBufh = malloc(h.rows*sizeof(float)); //Hub score
 //Set all values in vector to 1
@@ -81,8 +81,8 @@ for(int i=0; i<h.rows; i++)
 
 //Every process opens file only root writes data to file
 //char* fname = "hubVec.data";
+MPI_Barrier(world);
 MPI_File_open(world, "hubVec.data", MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
-
 
 if(myRank==0)
 {
@@ -92,6 +92,7 @@ MPI_File_write(fh, vecBufh, h.rows*h.cols, MPI_FLOAT, MPI_STATUS_IGNORE);
 MPI_File_close(&fh);
 
 free(vecBufh);
+MPI_Barrier(world);
 //-----------------End output vector to file---------------------
 
 
@@ -103,20 +104,16 @@ float* rowBufA = NULL;
 
 //------------------------------Begin Hub Vector Calculation-------------------------------------
 
-
+ MPI_Barrier(world);
  vecBufh = malloc(h.rows*sizeof(float));
  //read in hub score vector
- MPI_File_open(world, "hubVec.data", MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
+ MPI_File_open(world, "hubVec.data", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
  MPI_File_read(fh, vecBufh, h.rows*h.cols, MPI_FLOAT, MPI_STATUS_IGNORE);
  MPI_File_close(&fh);
-/*
-printf("Rank %d here 1\n", myRank);
-MPI_Barrier(world);
-printf("Rank %d here\n", myRank);
-*/
+ MPI_Barrier(world);
 
 //---------WHILE !CONVERGE----------
-for(int j=0; j<20; j++)
+for(int j=0; j<50; j++)
 {
 
  //malloc multBuf for calculation
@@ -126,7 +123,7 @@ for(int j=0; j<20; j++)
  //For loop for A*h calculation for every row of A assigned to process 
  //printf("Process %d beginning first matrix mult\n", myRank); 
  
- //MPI_Barrier(world);
+ MPI_Barrier(world);
  //printf("rank %d Before open file\n", myRank);
  MPI_File_open(world, "adjacencyMat.data", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
  //printf("rank %d after open file\n", myRank);
@@ -141,6 +138,7 @@ for(int j=0; j<20; j++)
   multBuf[i] = (float)ipMatrix(rowBufA, vecBufh, h.rows);
   free(rowBufA);
  }
+ MPI_Barrier(world);
  //Close file
  MPI_File_close(&fh);
  //GATHER RESULTS OF multBuf on vecBufh
@@ -155,7 +153,7 @@ for(int j=0; j<20; j++)
   world); //comm
  
  //printf("After Gather %d\n", myRank);
-
+ MPI_Barrier(world);
  //----------------(L^T)x; x=Ly---------------------
  MPI_File_open(world, "adjacencyMatTPose.data", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
  for(int i=0; i<rowcts[myRank]; i++)
@@ -189,7 +187,7 @@ for(int j=0; j<20; j++)
   multBuf[i] *= (1/scalar);
  }
 
- 
+ MPI_Barrier(world); 
  //Store new eigenvector in respective data file
  MPI_File_open(world, "hubVec.data", MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
 

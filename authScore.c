@@ -36,8 +36,8 @@ MPI_Comm_rank(world, &myRank);
 
 //Matrix struct to hold row and col values for Adjacency matrix
 matrix A;
-A.rows = 100;
-A.cols = 100;
+A.rows = 1628118;
+A.cols = 1628118;
 A.data = NULL;
 //A.data = malloc(A.rows*A.cols*sizeof(float));
 
@@ -70,7 +70,7 @@ MPI_Type_create_resized(col, 0, sizeof(float), &coltype);
 MPI_Type_commit(&coltype);
 
 MPI_File fh;
-float* vecBufa;
+float* vecBufa = NULL;
 //Fill hub score data file with vector
 vecBufa = malloc(a.rows*sizeof(float)); //Hub score
 //Set all values in vector to 1
@@ -81,17 +81,15 @@ for(int i=0; i<a.rows; i++)
 
 //Every process opens file only root writes data to file
 //char* fname = "hubVec.data";
+
+MPI_Barrier(world);
 MPI_File_open(world, "authVec.data", MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
 
-
-if(myRank==0)
-{
-MPI_File_write(fh, vecBufa, a.rows*a.cols, MPI_FLOAT, MPI_STATUS_IGNORE);
-}
+if(myRank==0) MPI_File_write(fh, vecBufa, a.rows*a.cols, MPI_FLOAT, MPI_STATUS_IGNORE);
 
 MPI_File_close(&fh);
-
 free(vecBufa);
+MPI_Barrier(world);
 //-----------------End output vector to file---------------------
 
 
@@ -103,26 +101,27 @@ float* rowBufA = NULL;
 
 //------------------------------Begin Authority Vector Calculation-------------------------------------
 
+//read in authority score vector before calculation
+vecBufa = malloc(a.rows*sizeof(float));
 
- vecBufa = malloc(a.rows*sizeof(float));
- //read in hub score vector
- MPI_File_open(world, "authVec.data", MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
- MPI_File_read(fh, vecBufa, a.rows*a.cols, MPI_FLOAT, MPI_STATUS_IGNORE);
- MPI_File_close(&fh);
-/*
-printf("Rank %d here 1\n", myRank);
 MPI_Barrier(world);
-printf("Rank %d here\n", myRank);
-*/
+
+MPI_File_open(world, "authVec.data", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+MPI_File_read(fh, vecBufa, a.rows*a.cols, MPI_FLOAT, MPI_STATUS_IGNORE);
+MPI_File_close(&fh);
+
+MPI_Barrier(world);
 
 //---------WHILE !CONVERGE----------
-for(int j=0; j<20; j++)
+for(int j=0; j<50; j++)
 {
 
  //malloc multBuf for calculation
+ //multBuf is each processes piece of the authority Score vector
+ //multBuf is full when each process completes their rows X vecBufa
  multBuf = malloc(rowcts[myRank]*sizeof(float)); 
  
-
+ MPI_Barrier(world);
  //----------------(L^T)y---------------------
  MPI_File_open(world, "adjacencyMatTPose.data", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
  for(int i=0; i<rowcts[myRank]; i++)
@@ -137,10 +136,11 @@ for(int j=0; j<20; j++)
   multBuf[i] = (float)ipMatrix(rowBufA, vecBufa, a.rows);
   free(rowBufA);
  }
+ MPI_Barrier(world);
  MPI_File_close(&fh);
  
 
- //GATHER RESULTS OF multBuf on vecBufh
+ //GATHER RESULTS of multBuf on vecBufh for L*x; x=((L^T)y
  MPI_Allgatherv(
   multBuf, //sendbuf
   rowcts[myRank], //sendcount
@@ -155,9 +155,7 @@ for(int j=0; j<20; j++)
 
  //--------------------------------Lx; x=(L^T)y-------------------------------------
  
- //malloc multBuf for calculation
- multBuf = malloc(rowcts[myRank]*sizeof(float)); 
- 
+ MPI_Barrier(world); 
  MPI_File_open(world, "adjacencyMat.data", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
  for(int i=0; i<rowcts[myRank]; i++)
  {
@@ -190,7 +188,7 @@ for(int j=0; j<20; j++)
   multBuf[i] *= (1/scalar);
  }
 
- 
+ MPI_Barrier(world); 
  //Store new eigenvector in respective data file
  MPI_File_open(world, "authVec.data", MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
 /*
