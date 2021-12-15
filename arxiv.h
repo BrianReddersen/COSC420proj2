@@ -4,8 +4,10 @@
 // group members: Spencer Lefever, Cody Murrer, Brian Reddersen
 
 #include<stdio.h>
-#include<stdlib.h>
-#include<mpi.h>
+#include <stdlib.h>
+#include <mpi.h>
+#include <mongoc/mongoc.h>
+#include <bson/bson.h>
 
 #define INDEX(i,j,n,m) i*m + j
 #define INDEX2(i,j,n,m) j*m + i
@@ -25,6 +27,163 @@ struct node{
 	struct node *left;
 	struct node *right;
 } node;
+
+// ungodly slow
+// searches whole database with case insensitive regex for
+// abstracts containing the given string
+void search_old(char *arg){
+	const char *dbstr = "mongodb://localhost:27017";
+	mongoc_client_t *client;
+	mongoc_collection_t *coll;
+	bson_oid_t oid;
+	const bson_t *doc;
+	char *str;
+	bson_error_t err;
+	
+	mongoc_init();
+	
+	client = mongoc_client_new(dbstr);
+	if (!client) exit(-1);
+	
+	mongoc_client_set_appname(client, "testclient");
+	coll = mongoc_client_get_collection(client, "project2", "papers");
+	
+	doc = bson_new();
+	
+	bson_t *filter;
+	bson_t *opts;
+	mongoc_cursor_t *curs;
+	mongoc_read_prefs_t *rp;
+	rp = mongoc_read_prefs_new(MONGOC_READ_SECONDARY);
+	
+	filter = BCON_NEW("abstract", "{", "$regex", arg, "$options", "si", "}");
+	opts = BCON_NEW("projection", "{", "paper_id", BCON_BOOL(true), 
+					"title", BCON_BOOL(true), "_id", BCON_BOOL(false), "}",
+					"sort", "{", "pagerank", BCON_INT32(-1), "}");
+	curs = mongoc_collection_find_with_opts(coll, filter, opts, NULL);
+	
+	while (mongoc_cursor_next(curs, &doc)){
+		str = bson_as_canonical_extended_json(doc, NULL);
+		printf("%s\n", str);
+		bson_free(str);
+	}
+	
+	bson_destroy(doc);
+	mongoc_collection_destroy(coll);
+	mongoc_client_destroy(client);
+	mongoc_cleanup();
+}
+
+// searches for papers containing any of the values given
+// pass it a string of words separated by spaces
+// ex. "eigenvalue orthogonal" finds papers containing either
+// "eigenvalue" or "orthogonal in the abstract
+// uses a text index to increase speed
+void search_any(char *arg){
+	const char *dbstr = "mongodb://localhost:27017";
+	mongoc_client_t *client;
+	mongoc_collection_t *coll;
+	bson_oid_t oid;
+	const bson_t *doc;
+	char *str;
+	bson_error_t err;
+	
+	mongoc_init();
+	
+	client = mongoc_client_new(dbstr);
+	if (!client) exit(-1);
+	
+	mongoc_client_set_appname(client, "testclient");
+	coll = mongoc_client_get_collection(client, "project2", "papers");
+	
+	doc = bson_new();
+	
+	bson_t *filter;
+	bson_t *opts;
+	mongoc_cursor_t *curs;
+	mongoc_read_prefs_t *rp;
+	rp = mongoc_read_prefs_new(MONGOC_READ_SECONDARY);
+	
+	filter = BCON_NEW("$text", "{", "$search", arg, "}");
+	opts = BCON_NEW("projection", "{", "paper_id", BCON_BOOL(true), 
+					"title", BCON_BOOL(true), "_id", BCON_BOOL(false), "}",
+					"sort", "{", "pagerank", BCON_INT32(-1), "}");
+	curs = mongoc_collection_find_with_opts(coll, filter, opts, NULL);
+	
+	while (mongoc_cursor_next(curs, &doc)){
+		str = bson_as_canonical_extended_json(doc, NULL);
+		printf("%s\n", str);
+		bson_free(str);
+	}
+	
+	bson_destroy(doc);
+	mongoc_collection_destroy(coll);
+	mongoc_client_destroy(client);
+	mongoc_cleanup();
+}
+
+// uses same text index as search_any, but finds documents containing 
+// ALL words in the space separated string
+// ex. "eigenvalue orthogonal" will find papers whose abstract
+// contains both "eigenvalue" and "orthogonal"
+void search_all(char *arg){
+	const char *dbstr = "mongodb://localhost:27017";
+	mongoc_client_t *client;
+	mongoc_collection_t *coll;
+	bson_oid_t oid;
+	const bson_t *doc;
+	char *str;
+	bson_error_t err;
+	
+	mongoc_init();
+	
+	client = mongoc_client_new(dbstr);
+	if (!client) exit(-1);
+	
+	mongoc_client_set_appname(client, "testclient");
+	coll = mongoc_client_get_collection(client, "project2", "papers");
+	
+	doc = bson_new();
+	
+	bson_t *filter;
+	bson_t *opts;
+	mongoc_cursor_t *curs;
+	mongoc_read_prefs_t *rp;
+	rp = mongoc_read_prefs_new(MONGOC_READ_SECONDARY);
+	
+	char mutable_arg[256];
+	char temp[100];
+	char search_string[256];
+	memset(mutable_arg, 0, 256*sizeof(char));
+	memset(search_string, 0, 256*sizeof(char));
+	strcpy(mutable_arg, arg);
+	char *token;
+	
+	token = strtok(mutable_arg, " ");
+	while (token != NULL){
+		printf("%s\n", token);
+		sprintf(temp, "\"%s\" ", token);
+		strcat(search_string, temp);
+		token = strtok(NULL, " ");
+	}
+	
+	filter = BCON_NEW("$text", "{", "$search", search_string, "}");
+	opts = BCON_NEW("projection", "{", "paper_id", BCON_BOOL(true), 
+					"title", BCON_BOOL(true), "_id", BCON_BOOL(false), "}",
+					"sort", "{", "pagerank", BCON_INT32(-1), "}");
+	curs = mongoc_collection_find_with_opts(coll, filter, opts, NULL);
+	
+	while (mongoc_cursor_next(curs, &doc)){
+		str = bson_as_canonical_extended_json(doc, NULL);
+		printf("%s\n", str);
+		bson_free(str);
+	}
+	
+	bson_destroy(doc);
+	mongoc_collection_destroy(coll);
+	mongoc_client_destroy(client);
+	mongoc_cleanup();
+}
 
 void initMatrix(matrix* A, int rows, int cols){
 	A->rows = rows;
