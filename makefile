@@ -5,7 +5,7 @@ run:
 	mpirun -n 1 ./adjmat
 	
 clean:
-	rm adjmat; rm bst; rm driver
+	rm adjmat; rm bst; rm driver; rm driver.o
 	
 rebuild:
 	make clean; make
