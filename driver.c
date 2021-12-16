@@ -5,7 +5,7 @@ int main(){
 	while(1){
 		printf("Input a String\n");
 		fgets(inBuff,255,stdin);
-		// exits program on user input of ctr+D 
+		// exits program on user input of ctr+D so loop can end
 		if(feof(stdin)){
 			printf("\nEOF detected Ending program\n");
 			break;
