@@ -3,11 +3,12 @@
 
 // group members: Spencer Lefever, Cody Murrer, Brian Reddersen
 
-#include<stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <mpi.h>
-#include <mongoc/mongoc.h>
-#include <bson/bson.h>
+#include <string.h>
+//#include <mpi.h>
+//#include <mongoc/mongoc.h>
+//#include <bson/bson.h>
 
 #define INDEX(i,j,n,m) i*m + j
 #define INDEX2(i,j,n,m) j*m + i
@@ -32,7 +33,7 @@ struct node{
 // searches whole database with case insensitive regex for
 // abstracts containing the given string
 void search_old(char *arg){
-	const char *dbstr = "mongodb://localhost:27017";
+/*	const char *dbstr = "mongodb://localhost:27017";
 	mongoc_client_t *client;
 	mongoc_collection_t *coll;
 	bson_oid_t oid;
@@ -72,6 +73,7 @@ void search_old(char *arg){
 	mongoc_collection_destroy(coll);
 	mongoc_client_destroy(client);
 	mongoc_cleanup();
+	*/
 }
 
 // searches for papers containing any of the values given
@@ -80,7 +82,7 @@ void search_old(char *arg){
 // "eigenvalue" or "orthogonal in the abstract
 // uses a text index to increase speed
 void search_any(char *arg){
-	const char *dbstr = "mongodb://localhost:27017";
+/*	const char *dbstr = "mongodb://localhost:27017";
 	mongoc_client_t *client;
 	mongoc_collection_t *coll;
 	bson_oid_t oid;
@@ -120,6 +122,7 @@ void search_any(char *arg){
 	mongoc_collection_destroy(coll);
 	mongoc_client_destroy(client);
 	mongoc_cleanup();
+	*/
 }
 
 // uses same text index as search_any, but finds documents containing 
@@ -127,7 +130,7 @@ void search_any(char *arg){
 // ex. "eigenvalue orthogonal" will find papers whose abstract
 // contains both "eigenvalue" and "orthogonal"
 void search_all(char *arg){
-	const char *dbstr = "mongodb://localhost:27017";
+/*	const char *dbstr = "mongodb://localhost:27017";
 	mongoc_client_t *client;
 	mongoc_collection_t *coll;
 	bson_oid_t oid;
@@ -183,6 +186,7 @@ void search_all(char *arg){
 	mongoc_collection_destroy(coll);
 	mongoc_client_destroy(client);
 	mongoc_cleanup();
+	*/
 }
 
 void initMatrix(matrix* A, int rows, int cols){

@@ -5,10 +5,13 @@ run:
 	mpirun -n 1 ./adjmat
 	
 clean:
-	rm adjmat; rm bst
+	rm adjmat; rm bst; rm driver
 	
 rebuild:
 	make clean; make
+
+driver: driver.o
+	gcc -std=c99 -w driver.c -o driver $$(pkg-config --libs --cflags libmongoc-1.0)
 
 bst:
 	mpicc -std=c99 -w testbst.c -o bst
